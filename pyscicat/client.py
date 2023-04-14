@@ -88,21 +88,32 @@ class ScicatClient:
                 self._password is not None
             ), "SciCat login credentials (username, password) must be provided if token is not provided"
             self._token = get_token(self._base_url, self._username, self._password)
-            self._headers["Authorization"] = "Bearer {}".format(self._token)
+        if not self._token:
+            logger.error("Token not provided")
+            raise ScicatCommError("Token not provided")
+        self._headers["Authorization"] = "Bearer {}".format(self._token)
 
-    def _send_to_scicat(self, cmd: str, endpoint: str, data: BaseModel = None):
+
+    def _send_to_scicat(
+        self, 
+        cmd: str, 
+        endpoint: str, 
+        data: BaseModel = None,
+        exclude_fields: set = {},
+    ):
         """sends a command to the SciCat API server using url and token, returns the response JSON
         Get token with the getToken method"""
         return requests.request(
             method=cmd,
             url=urljoin(self._base_url, endpoint),
-            json=data.dict(exclude_none=True) if data is not None else None,
+            json=data.dict(exclude=exclude_fields,exclude_none=True,exclude_unset=True) if data is not None else None,
             params={"access_token": self._token},
             headers=self._headers,
             timeout=self._timeout_seconds,
             stream=False,
             verify=True,
         )
+
 
     def _call_endpoint(
         self,
@@ -111,8 +122,9 @@ class ScicatClient:
         data: BaseModel = None,
         operation: str = "",
         allow_404=False,
+        exclude_fields: set = {},
     ) -> Optional[dict]:
-        response = self._send_to_scicat(cmd=cmd, endpoint=endpoint, data=data)
+        response = self._send_to_scicat(cmd=cmd, endpoint=endpoint, data=data, exclude_fields=exclude_fields)
         result = response.json()
         if not response.ok:
             err = result.get("error", {})
@@ -162,7 +174,7 @@ class ScicatClient:
             )
         return self._call_endpoint(
             cmd="post", endpoint=dataset_url, data=dataset, operation="datasets_replace"
-        ).get("pid")
+        )
 
     """
         Upload or create a new dataset
@@ -195,8 +207,12 @@ class ScicatClient:
             Raises if a non-20x message is returned
         """
         return self._call_endpoint(
-            cmd="post", endpoint="Datasets", data=dataset, operation="datasets_create"
-        ).get("pid")
+            cmd="post", 
+            endpoint="Datasets", 
+            data=dataset, 
+            operation="datasets_create",
+            exclude_fields={'pid'},
+        )
 
     """
         Upload a new dataset
@@ -233,7 +249,7 @@ class ScicatClient:
             endpoint="RawDataSets/replaceOrCreate",
             data=dataset,
             operation="datasets_raw_replace",
-        ).get("pid")
+        )
 
     """
         Upload a raw dataset
@@ -270,7 +286,7 @@ class ScicatClient:
             endpoint="DerivedDataSets/replaceOrCreate",
             data=dataset,
             operation="datasets_derived_replace",
-        ).get("pid")
+        )
 
     def datasets_update(self, dataset: Dataset, pid: str) -> str:
         """Updates an existing dataset
@@ -300,7 +316,7 @@ class ScicatClient:
             endpoint=f"Datasets/{quote_plus(pid)}",
             data=dataset,
             operation="datasets_update",
-        ).get("pid")
+        )
 
     """
         Update a dataset
@@ -317,7 +333,7 @@ class ScicatClient:
         It is still accessible with the original name for backward compatibility
         The original names were create_dataset_datablock and upload_datablock
         This function is obsolete and will be removed in future releases
-        Function datasets_origdatablock_create should be used.
+        Function datasets_datablock_create should be used.
 
         Parameters
         ----------
@@ -378,6 +394,7 @@ class ScicatClient:
             endpoint=endpoint,
             data=origdatablock,
             operation="datasets_origdatablock_create",
+            exclude_fields={'id','datasetId','ownerGroup','accessGroups'},
         )
 
     """
@@ -452,7 +469,7 @@ class ScicatClient:
             endpoint="Samples",
             data=sample,
             operation="samples_create",
-        ).get("sampleId")
+        )
 
     upload_sample = samples_create
 
@@ -489,7 +506,7 @@ class ScicatClient:
             endpoint=f"Samples/{quote_plus(sampleId)}",
             data=sample,
             operation="samples_update",
-        ).get("sampleId")
+        )
 
     def instruments_create(self, instrument: Instrument):
         """
@@ -519,7 +536,7 @@ class ScicatClient:
             endpoint="Instruments",
             data=instrument,
             operation="instruments_create",
-        ).get("pid")
+        )
 
     upload_instrument = instruments_create
 
@@ -558,7 +575,7 @@ class ScicatClient:
             endpoint=f"Instruments/{quote_plus(pid)}",
             data=instrument,
             operation="instruments_update",
-        ).get("pid")
+        )
 
     def proposals_create(self, proposal: Proposal):
         """
@@ -588,7 +605,7 @@ class ScicatClient:
             endpoint="Proposals",
             data=proposal,
             operation="proposals_create",
-        ).get("proposalId")
+        )
 
     upload_proposal = proposals_create
 
@@ -626,7 +643,7 @@ class ScicatClient:
             endpoint=f"Proposals/{quote_plus(proposalId)}",
             data=proposal,
             operation="proposals_update",
-        ).get("proposalId")
+        )
 
     def datasets_find(
         self, skip: int = 0, limit: int = 25, query_fields: Optional[dict] = None

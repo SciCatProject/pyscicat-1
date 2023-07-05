@@ -26,7 +26,8 @@ class Ownable(MongoQueryable):
     """Many objects in SciCat are ownable"""
 
     ownerGroup: str
-    accessGroups: List[str]
+    accessGroups: Optional[List[str]]
+    instrumentGroup: Optional[str]
 
 
 class User(BaseModel):
@@ -45,15 +46,14 @@ class Proposal(Ownable):
     Defines the purpose of an experiment and links an experiment to principal investigator and main proposer
     """
 
-    # TODO: find out which of these are not optional and update
-    proposalId: Optional[str]
+    proposalId: str
     pi_email: Optional[str]
     pi_firstname: Optional[str]
     pi_lastname: Optional[str]
-    email: Optional[str]
+    email: str
     firstname: Optional[str]
     lastname: Optional[str]
-    title: Optional[str]
+    title: Optional[str]  # required in next backend version
     abstract: Optional[str]
     startTime: Optional[str]
     endTime: Optional[str]
@@ -68,7 +68,6 @@ class Sample(Ownable):
     Raw datasets should be linked to such sample definitions.
     """
 
-    # TODO: find out which of these are not optional and update
     sampleId: Optional[str]
     owner: Optional[str]
     description: Optional[str]

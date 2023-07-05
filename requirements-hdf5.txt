@@ -1,2 +1,0 @@
-hdf5plugin
-h5py

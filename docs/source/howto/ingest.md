@@ -13,6 +13,7 @@ from pyscicat.model import (
     Datablock,
     DataFile,
     Dataset,
+    Sample,
     Ownable
 )
 
@@ -60,6 +61,19 @@ Now we can create a Dataset instance and upload it! Notice how we passed the fie
 Note that we store the provided dataset_id in a variable for later use.
 
 Also note the `sourceFolder`. This is a folder on the file system that SciCat has access to, and will contain the files for this `Dataset`.
+
+Proposals and instruments have to be created by an administrator. A sample with `sampleId="gargleblaster"` can be created like this:
+```python
+sample = Sample(
+    sampleId="gargleblaster",
+    owner="Chamber of Commerce",
+    description="A legendary drink.",
+    sampleCharacteristics={"Flavour": "Unknown, but potent"},
+    isPublished=False,
+    **ownable.dict()
+)
+sample_id = client.upload_sample(sample)  # sample_id == "gargleblaster"
+```
 
 ## Upload a Datablock
 

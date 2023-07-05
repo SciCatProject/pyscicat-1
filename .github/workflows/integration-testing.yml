@@ -1,0 +1,58 @@
+name: Integration tests V4
+
+on:
+  pull_request:
+    branches:
+      - main
+
+jobs:
+  container_job:
+    runs-on: ubuntu-latest
+
+    services:
+      mongo:
+        image: mongo
+        ports:
+          - 27107:27107
+      scicat-backend:
+        image: ghcr.io/scicatproject/scicat-backend-next:stable
+        ports:
+          - 3000:3000
+        env:
+          MONGODB_URI: mongodb://mongo:27017/scicat
+          EXPRESS_SESSION_SECRET: "${EXPRESS_SESSION_SECRET}"
+          JWT_SECRET: "${JWT_SECRET}"
+          PORT: 3000
+          HTTP_MAX_REDIRECTS: 5
+          HTTP_TIMEOUT: 5000
+          JWT_EXPIRES_IN: 3600
+          SITE: SAMPLE-SITE
+          PID_PREFIX: PID.SAMPLE.PREFIX
+          DOI_PREFIX: DOI.SAMPLE.PREFIX
+          METADATA_KEYS_RETURN_LIMIT: 100
+          METADATA_PARENT_INSTANCES_RETURN_LIMIT: 100
+          ADMIN_GROUPS: admin,ingestor
+
+    steps:
+        - uses: actions/checkout@v2
+        - uses: actions/setup-python@v2
+          with:
+            python-version: ${{ matrix.python-version }}
+
+        - run: source continuous_integration/scripts/install.sh
+
+
+        -  run: |
+            set -vxeuo pipefail
+            python -m pip install .
+            python -m pip install .[dev]
+            python -m pip list
+
+        - run: |
+            set -vxeuo pipefail
+            coverage run -m pytest tests/tests_integration/tests_integration.py
+            coverage report
+          env:
+            BASE_URL: http://localhost:3000/api/v3
+            SCICAT_USER: ingestor
+            SCICAT_PASSWORD: aman

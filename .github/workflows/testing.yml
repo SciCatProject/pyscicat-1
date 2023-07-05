@@ -32,7 +32,8 @@ jobs:
       shell: bash -l {0}
       run: |
         set -vxeuo pipefail
-        python -m pip install -r requirements-dev.txt
+        python -m pip install .[dev]
+        python -m pip install .[hdf5]
         python -m pip list
     
     - name: Lint with flake8
@@ -45,5 +46,5 @@ jobs:
       shell: bash -l {0}
       run: |
         set -vxeuo pipefail
-        coverage run -m pytest -v
+        coverage run -m pytest --ignore tests_integration -v 
         coverage report

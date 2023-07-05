@@ -3,7 +3,7 @@ from pathlib import Path
 
 import pytest
 import requests_mock
-from ..client import (
+from pyscicat.client import (
     from_credentials,
     from_token,
     encode_thumbnail,
@@ -12,11 +12,14 @@ from ..client import (
     ScicatCommError,
 )
 
-from ..model import (
+from pyscicat.model import (
     Attachment,
     Datablock,
     DataFile,
+    Instrument,
+    Proposal,
     RawDataset,
+    Sample,
     Ownable,
 )
 
@@ -28,22 +31,33 @@ def add_mock_requests(mock_request):
         local_url + "Users/login",
         json={"id": "a_token"},
     )
-    mock_request.post(local_url + "Samples", json={"sampleId": "dataset_id"})
+
+    mock_request.post(local_url + "Instruments", json={"pid": "earth"})
+    mock_request.post(local_url + "Proposals", json={"proposalId": "deepthought"})
+    mock_request.post(local_url + "Samples", json={"sampleId": "gargleblaster"})
+    mock_request.patch(local_url + "Instruments/earth", json={"pid": "earth"})
+    mock_request.patch(
+        local_url + "Proposals/deepthought", json={"proposalId": "deepthought"}
+    )
+    mock_request.patch(
+        local_url + "Samples/gargleblaster", json={"sampleId": "gargleblaster"}
+    )
+
     mock_request.post(local_url + "RawDatasets/replaceOrCreate", json={"pid": "42"})
     mock_request.patch(
         local_url + "Datasets/42",
         json={"pid": "42"},
     )
     mock_request.post(
-        local_url + "RawDatasets/42/origdatablocks",
+        local_url + "Datasets/42/origdatablocks",
         json={"response": "random"},
     )
     mock_request.post(
-        local_url + "RawDatasets/42/attachments",
+        local_url + "Datasets/42/attachments",
         json={"response": "random"},
     )
 
-    mock_request.post(local_url + "Datasets", json={"pid": "17"})
+    mock_request.post(local_url + "Datasets", json={"pid": "42"})
 
 
 def test_scicat_ingest():
@@ -66,6 +80,36 @@ def test_scicat_ingest():
         size = get_file_size(thumb_path)
         assert size is not None
 
+        # Instrument
+        instrument = Instrument(
+            pid="earth", name="Earth", customMetadata={"a": "field"}
+        )
+        assert scicat.upload_instrument(instrument) == "earth"
+        assert scicat.instruments_create(instrument) == "earth"
+        assert scicat.instruments_update(instrument) == "earth"
+
+        # Proposal
+        proposal = Proposal(
+            proposalId="deepthought",
+            title="Deepthought",
+            email="deepthought@viltvodle.com",
+            **ownable.dict()
+        )
+        assert scicat.upload_proposal(proposal) == "deepthought"
+        assert scicat.proposals_create(proposal) == "deepthought"
+        assert scicat.proposals_update(proposal) == "deepthought"
+
+        # Sample
+        sample = Sample(
+            sampleId="gargleblaster",
+            description="Gargleblaster",
+            sampleCharacteristics={"a": "field"},
+            **ownable.dict()
+        )
+        assert scicat.upload_sample(sample) == "gargleblaster"
+        assert scicat.samples_create(sample) == "gargleblaster"
+        assert scicat.samples_update(sample) == "gargleblaster"
+
         # RawDataset
         dataset = RawDataset(
             path="/foo/bar",
@@ -84,7 +128,7 @@ def test_scicat_ingest():
             sampleId="gargleblaster",
             **ownable.dict()
         )
-        dataset_id = scicat.upload_raw_dataset(dataset)
+        dataset_id = scicat.upload_new_dataset(dataset)
         assert dataset_id == "42"
 
         # Update record
@@ -101,7 +145,7 @@ def test_scicat_ingest():
             dataFileList=[data_file],
             **ownable.dict()
         )
-        scicat.upload_datablock(data_block)
+        scicat.upload_dataset_origdatablock(data_block)
 
         # Attachment
         attachment = Attachment(

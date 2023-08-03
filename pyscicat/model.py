@@ -14,12 +14,14 @@ class DatasetType(str, enum.Enum):
 
 
 class MongoQueryable(BaseModel):
-    """Many objects in SciCat are mongo queryable"""
-
-    createdBy: Optional[str]
-    updatedBy: Optional[str]
-    updatedAt: Optional[str]
-    createdAt: Optional[str]
+    """Many objects in SciCat are mongo queryable
+    None of these properties should be included. When they are included at all
+    v4.x of the backend will throw an error saying that they should not exist.  
+    """
+    createdBy: Optional[str] = None
+    updatedBy: Optional[str] = None
+    updatedAt: Optional[str] = None
+    createdAt: Optional[str] = None
 
 
 class Ownable(MongoQueryable):
@@ -27,7 +29,7 @@ class Ownable(MongoQueryable):
 
     ownerGroup: str
     accessGroups: Optional[List[str]]
-    instrumentGroup: Optional[str]
+    instrumentGroup: Optional[str] = None
 
 
 class User(BaseModel):
@@ -86,7 +88,7 @@ class Job(MongoQueryable):
     id: Optional[str]
     emailJobInitiator: str
     type: str
-    creationTime: Optional[str]  # not sure yet which ones are optional or not.
+    creationTime: Optional[str]  #Needed needs to be validated in use client side code because Typing module does not support typing for this type  # not sure yet which ones are optional or not.
     executionTime: Optional[str]
     jobParams: Optional[dict]
     jobStatusMessage: Optional[str]
@@ -109,34 +111,34 @@ class Dataset(Ownable):
     """
     A dataset in SciCat, base class for derived and raw datasets
     """
-
-    pid: Optional[str]
-    classification: Optional[str]
-    contactEmail: str
-    creationTime: str  # datetime
-    datasetName: Optional[str]
-    description: Optional[str]
-    history: Optional[List[dict]]  # list of foreigh key ids to the Messages table
-    instrumentId: Optional[str]
-    isPublished: Optional[bool] = False
-    keywords: Optional[List[str]]
-    license: Optional[str]
-    numberOfFiles: Optional[int]
-    numberOfFilesArchived: Optional[int]
-    orcidOfOwner: Optional[str]
-    packedSize: Optional[int]
-    owner: str
-    ownerEmail: Optional[str]
-    sharedWith: Optional[List[str]]
-    size: Optional[int]
-    sourceFolder: str
-    sourceFolderHost: Optional[str]
-    techniques: Optional[List[dict]]  # with {'pid':pid, 'name': name} as entries
-    type: DatasetType
-    validationStatus: Optional[str]
-    version: Optional[str]
-    scientificMetadata: Optional[Dict]
-
+    pid: Optional[str] = None # This should no longer be included. The v4.x backend will not accept this.
+    classification: Optional[str] = None # Optional
+    contactEmail: str # Needed
+    creationTime: Optional[str]# Needed datetime
+    datasetName: Optional[str] = None # Optional
+    description: Optional[str] = None # Optional
+    history: Optional[List[dict]] = None # Optional list of foreigh key ids to the Messages table
+    instrumentId: Optional[str] = None # Optional
+    isPublished: Optional[bool] = False # Optional
+    keywords: Optional[List[str]] = None #optional
+    license: Optional[str] = None # Optional
+    numberOfFiles: Optional[int] = None #Optional
+    numberOfFilesArchived: Optional[int] = None #Optional
+    orcidOfOwner: Optional[str] = None # Optional
+    packedSize: Optional[int] = None # Optional
+    owner: str # Needed
+    ownerEmail: Optional[str] =  None # Optional
+    sharedWith: Optional[List[str]] = None # Optional
+    size: Optional[int] = None # Otional
+    sourceFolder: str # Needed
+    sourceFolderHost: Optional[str] = None # Optional
+    techniques: Optional[List[dict]] = None # Optional  # with {'pid':pid, 'name': name} as entries
+    type: DatasetType  # Needed
+    validationStatus: Optional[str] = None # Optional
+    version: Optional[str] = None # Optional
+    scientificMetadata: Optional[Dict] = None # Optional
+    principalInvestigator: Optional[str] # Needed
+    creationLocation: Optional[str] # Needed
 
 class RawDataset(Dataset):
     """
@@ -192,7 +194,7 @@ class Datablock(Ownable):
     packedSize: Optional[int]
     chkAlg: Optional[int]
     version: str = None
-    instrumentGroup: Optional[str]
+    instrumentGroup: Optional[str] = None
     dataFileList: List[DataFile]
     datasetId: str
 

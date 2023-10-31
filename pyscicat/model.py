@@ -105,6 +105,7 @@ class InstrumentOrig(MongoQueryable):
     name: str
     customMetadata: Optional[dict] = None
 
+
 class Instrument(MongoQueryable):
     """
     Instrument class, most of this is flexibly definable in customMetadata
@@ -113,6 +114,7 @@ class Instrument(MongoQueryable):
     uniqueName: Optional[str] = None
     name: str
     customMetadata: Optional[dict] = None
+
 
 class Dataset(Ownable):
     """

@@ -94,7 +94,7 @@ def unwind(
 
 
 def scientific_metadata(
-    filename, excludeRootEntry: bool = True, skipKeyList: list = []
+        filename, excludeRootEntry: bool = True, skipKeyList: list = [], startPath:str="/"
 ) -> dict:
     """
     Goals:
@@ -108,6 +108,7 @@ def scientific_metadata(
     scientificMetadata=scientific_metadata(Path('./my_file.h5'), skipKeyList=['sasdata1'])
     If the root branch is singular, it can be omitted from the output dictionary by setting
     excludeRootEntry to True
+    The start path from where to traverse the tree can be specified with the "startPath" argument. 
 
     """
     # ensure the filename argument is of class Path
@@ -118,7 +119,7 @@ def scientific_metadata(
     with h5py.File(filename, "r") as h5f:
         # let's see if we can do this simpler
         metadata = dict()  # .fromkeys(prior_keys)
-        unwind(h5f, "/", metadata, skipKeyList=skipKeyList)
+        unwind(h5f, startPath, metadata, skipKeyList=skipKeyList)
 
     # first metadata entry is empty, so enter one level deeper.
     if len(metadata.keys()) == 1 and list(metadata.keys())[0] == "":

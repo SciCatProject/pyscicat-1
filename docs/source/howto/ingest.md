@@ -7,12 +7,12 @@ To begin with:
 from datetime import datetime
 from pathlib import Path
 
-from pyscicat.client import encode_thumbnail, ScicatClient
+from pyscicat.client import encode_thumbnail, ScicatClient,CreateDatasetOrigDatablockDto
 from pyscicat.model import (
     Attachment,
     Datablock,
     DataFile,
-    Dataset,
+    RawDataset,
     Sample,
     Ownable
 )
@@ -38,13 +38,13 @@ Now we setup an `Ownable` instance. This is a model class that several other mod
 ```python
 # Create a RawDataset object with settings for your choosing. Notice how
 # we pass the `ownable` instance.
-dataset = Dataset(
+dataset = RawDataset(
     path="/foo/bar",
     size=42,
     owner="slartibartfast",
     contactEmail="slartibartfast@magrathea.org",
     creationLocation="magrathea",
-    creationTime=str(datetime.now()),
+    creationTime=str(datetime.now().isoformat()),
     type="raw",
     instrumentId="earth",
     proposalId="deepthought",
@@ -53,8 +53,12 @@ dataset = Dataset(
     sourceFolder="/foo/bar",
     scientificMetadata={"a": "field"},
     sampleId="gargleblaster",
-    **ownable.dict())
-dataset_id = scicat.upload_raw_dataset(dataset)
+    **ownable.model_dump())
+
+# Required arguments: `contactEmail`, `creationTime`, `owner`, `sourceFolder`, and `type` (raw or derived)
+
+dataset_id = scicat.datasets_create(dataset)
+
 ```
 Now we can create a Dataset instance and upload it! Notice how we passed the fields of the `ownable` instance there at the end.
 
@@ -63,6 +67,7 @@ Note that we store the provided dataset_id in a variable for later use.
 Also note the `sourceFolder`. This is a folder on the file system that SciCat has access to, and will contain the files for this `Dataset`.
 
 Proposals and instruments have to be created by an administrator. A sample with `sampleId="gargleblaster"` can be created like this:
+
 ```python
 sample = Sample(
     sampleId="gargleblaster",
@@ -70,22 +75,26 @@ sample = Sample(
     description="A legendary drink.",
     sampleCharacteristics={"Flavour": "Unknown, but potent"},
     isPublished=False,
-    **ownable.dict()
+    **ownable.model_dump()
 )
-sample_id = client.upload_sample(sample)  # sample_id == "gargleblaster"
+sample_id = scicat.samples_create(sample)  # sample_id == "gargleblaster"
+
+# Required arguments: `isPublished`
+
 ```
 
 ## Upload a Datablock
 
 ```python
 # Create Datablock with DataFiles
-data_file = DataFile(path="file.h5", size=42)
-data_block = Datablock(size=42,
-                       version=1,
-                       datasetId=dataset_id,
-                       dataFileList=[data_file],
-                       **ownable.dict())
-scicat.upload_datablock(data_block)
+data_file = DataFile(path="file.h5", size=42, time = datetime.now().isoformat())
+
+# Required arguments: `path`, `size`, `time`
+
+data_block = CreateDatasetOrigDatablockDto(size=42,
+                                           dataFileList=[data_file])
+
+scicat.datasets_origdatablock_create(dataset_id, data_block)
 ```
 The `Datablock` is a container for `DataFile` instances. We are not loading the files, rather we are creating references that are used (and displayed) in SciCat. 
 
@@ -99,23 +108,28 @@ attachment = Attachment(
     datasetId=dataset_id,
     thumbnail=encode_thumbnail(thumb_path),
     caption="scattering image",
-    **ownable.dict()
+    **ownable.model_dump()
 )
 scicat.upload_attachment(attachment)
+
+# If your image is larger than 760kB you may get an error that the request entity is too large. You can resize the image before calling the encode thumbnail function. 
+
 ```
 Now we upload an `Attachment`. This is often used in SciCat to display thumbnails for a `Dataset`. Here, we are loading the actual content of a file (stored in SciCat's database). 
 
 So, to put it all together:
+
 ```python
 from datetime import datetime
 from pathlib import Path
 
-from pyscicat.client import encode_thumbnail, ScicatClient
+from pyscicat.client import encode_thumbnail, ScicatClient,CreateDatasetOrigDatablockDto
 from pyscicat.model import (
     Attachment,
     Datablock,
     DataFile,
-    Dataset,
+    RawDataset,
+    Sample,
     Ownable
 )
 
@@ -131,13 +145,13 @@ thumb_path = Path(__file__).parent.parent / "test/data/SciCatLogo.png"
 
 # Create a RawDataset object with settings for your choosing. Notice how
 # we pass the `ownable` instance.
-dataset = Dataset(
+dataset = RawDataset(
     path="/foo/bar",
     size=42,
     owner="slartibartfast",
     contactEmail="slartibartfast@magrathea.org",
     creationLocation="magrathea",
-    creationTime=str(datetime.now()),
+    creationTime=str(datetime.now().isoformat()),
     type="raw",
     instrumentId="earth",
     proposalId="deepthought",
@@ -146,24 +160,24 @@ dataset = Dataset(
     sourceFolder="/foo/bar",
     scientificMetadata={"a": "field"},
     sampleId="gargleblaster",
-    **ownable.dict())
-dataset_id = scicat.upload_raw_dataset(dataset)
+    **ownable.model_dump())
+
+dataset_id = scicat.datasets_create(dataset)
+
 
 # Create Datablock with DataFiles
-data_file = DataFile(path="file.h5", size=42)
-data_block = Datablock(size=42,
-                       version=1,
-                       datasetId=dataset_id,
-                       dataFileList=[data_file],
-                       **ownable.dict())
-scicat.upload_datablock(data_block)
+data_file = DataFile(path="file.h5", size=42, time = datetime.now().isoformat())
+data_block = CreateDatasetOrigDatablockDto(size=42,
+                                           dataFileList=[data_file])
 
-#Create Attachment
+scicat.datasets_origdatablock_create(dataset_id, data_block)
+
+# Create Attachment
 attachment = Attachment(
     datasetId=dataset_id,
     thumbnail=encode_thumbnail(thumb_path),
     caption="scattering image",
-    **ownable.dict()
+    **ownable.model_dump()
 )
 scicat.upload_attachment(attachment)
 
